@@ -1,0 +1,53 @@
+workflowExternalId: wf_icapi_data_pipeline
+version: '1'
+workflowDefinition:
+  tasks:
+  - externalId: create_assets_hierarchy_task
+    type: transformation
+    parameters:
+      transformation:
+        externalId: create_asset_hierarchy
+        data: { }
+    retries: 0
+    timeout: 300
+    onFailure: abortWorkflow
+  - externalId: contextualize_ts_assets_task
+    type: transformation
+    parameters:
+      transformation:
+        externalId: contextualize_ts_assets
+        data: { }
+    retries: 0
+    timeout: 300
+    onFailure: abortWorkflow
+    dependsOn:
+      - externalId: create_assets_hierarchy_task
+  - externalId: icapi_datapoints_extractor_task
+    type: function
+    parameters:
+      function:
+        externalId: icapi_datapoints_extractor
+        data: {
+                "sites": ["Sao_Paulo"],
+                "backfill": true,
+                "hours": 1,
+              }
+    retries: 0
+    timeout: 300
+    onFailure: abortWorkflow
+    dependsOn:
+      - externalId: contextualize_ts_assets_task
+  - externalId: oee_timeseries_task
+    type: function
+    parameters:
+      function:
+        externalId: oee_timeseries
+        data: {
+                "sites": ["Sao_Paulo"],
+                "lookback_minutes": 60
+              }
+    retries: 0
+    timeout: 300
+    onFailure: abortWorkflow
+    dependsOn:
+      - externalId: icapi_datapoints_extractor_task
